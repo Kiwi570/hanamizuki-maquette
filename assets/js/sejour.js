@@ -103,21 +103,32 @@ function calculator() {
   const start = addDays(todayJST(), 14);
   f.elements.checkin.value = start;
   f.elements.checkin.min = todayJST();
-  const out = { total: $('[data-total]', f), base: $('[data-base]', f), disc: $('[data-disc]', f), nights: $('[data-nights]', f), err: $('[data-calc-err]', f), fill: $('.calc-out .fill', f) };
+  const out = { total: $('[data-total]', f), base: $('[data-base]', f), disc: $('[data-disc]', f), nights: $('[data-nights]', f), err: $('[data-calc-err]', f), fill: $('.calc-out .fill', f), checkout: $('[data-checkout]', f), pp: $('[data-pp]', f) };
+  const campCheck = $('[data-camp-check]', f), campOff = $('[data-camp-off]', f);
   const shown = { v: 0 };
   let last = null;
   const render = () => {
     const v = readForm(f);
+    // la case de la campagne n'apparaît que si au moins une nuit tombe dans sa période
+    const C = D.campaign;
+    const inRange = Array.from({ length: v.nights }, (_, i) => addDays(v.checkin, i)).some(d => d >= C.start && d <= C.end);
+    const over = todayJST() > C.end;
+    if (campCheck) campCheck.hidden = !inRange;
+    if (campOff) campOff.hidden = inRange || over;
+    if (!inRange) v.camp = false;
     const r = compute(v);
     last = { v, r };
+    out.checkout.textContent = fmtDate(asDate(addDays(v.checkin, v.nights)), { month: 'short', day: 'numeric', weekday: 'short' });
     if (r.error) {
       out.err.textContent = t(r.error);
-      out.total.textContent = '—'; out.base.textContent = '—'; out.disc.textContent = '—'; out.nights.innerHTML = '';
+      out.total.textContent = '—'; out.base.textContent = '—'; out.disc.textContent = '—'; out.pp.textContent = '—'; out.nights.innerHTML = '';
       return;
     }
     out.err.textContent = '';
     out.base.textContent = yen(r.base);
     out.disc.textContent = r.disc ? '−' + yen(r.disc) : yen(0);
+    const persons = v.adults + v.children + v.infants;
+    out.pp.textContent = persons ? yen(r.total / (v.nights * persons)) : '—';
     out.nights.innerHTML = r.nights.map((n, i) => `<li><span>${nightLabel(i)} · ${fmtDate(asDate(n.date), { month: 'short', day: 'numeric', weekday: 'short' })}</span><span class="${n.eligible ? 'ok' : ''}">${n.eligible ? t('calc.eligible') : t('calc.noteligible')} · ${yen(n.base - n.disc)}</span></li>`).join('');
     if (HZ.calm) out.total.textContent = yen(r.total);
     else gsap.to(shown, { v: r.total, duration: 0.8, ease: 'power3.out', onUpdate: () => { out.total.textContent = yen(shown.v); } });
@@ -207,6 +218,7 @@ function booking() {
     const rows = [
       [t('calc.checkin'), fmtDate(asDate(v.checkin), { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })],
       [t('calc.nights'), String(v.nights)],
+      [t('calc.checkout'), fmtDate(asDate(addDays(v.checkin, v.nights)), { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })],
       [t('calc.adults') + ' / ' + t('calc.children') + ' / ' + t('calc.infants'), `${v.adults} / ${v.children} / ${v.infants}`],
       [t('calc.plan'), t(v.plan === 'group' ? 'calc.plan2' : 'calc.plan1')],
       [t('form.options'), opts.join(', ') || '—'],
@@ -217,7 +229,17 @@ function booking() {
     ];
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     $('[data-summary]', f).innerHTML = rows.map(([k, val]) => `<div><span>${esc(k)}</span><span>${esc(val)}</span></div>`).join('');
+    const msg = (f.elements.msg.value || '').trim();
+    summaryText = rows.map(([k, val]) => `${k} : ${val}`).join('\n') + (msg ? `\n${t('form.msg')} : ${msg}` : '') + '\n\n民宿 花水木 · 050-5052-1587 · info@oita-yado.com';
   };
+  let summaryText = '';
+  const copyBtn = $('[data-bcopy]', f);
+  if (copyBtn) copyBtn.addEventListener('click', async () => {
+    const label = copyBtn.querySelector('span');
+    try { await navigator.clipboard.writeText(summaryText); label.textContent = t('ui.copied'); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents($('[data-summary]', f)); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+    setTimeout(() => { label.textContent = t('form.copy'); }, 1800);
+  });
   f.addEventListener('submit', e => {
     e.preventDefault();
     if (!validate()) return;

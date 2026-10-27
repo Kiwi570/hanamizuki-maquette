@@ -64,6 +64,21 @@ export function drawMap(host) {
   bungo.setAttribute('style', 'font-size:18px');
   el('path', { d: 'M930 250 h40 m-8 -6 l8 6 -8 6', fill: 'none', stroke: 'var(--ai-300)', 'stroke-width': 1.5 }, labels);
 
+  // échelle (1 km ≈ 89,5 unités avec cette projection) et nord
+  const KM = 89.5;
+  const sc = el('g', { class: 'scale', transform: 'translate(600 712)' }, svg);
+  el('rect', { class: 'bg', x: -14, y: -26, width: KM + 64, height: 46, rx: 8 }, sc);
+  el('line', { x1: 0, y1: 0, x2: KM, y2: 0 }, sc);
+  [0, KM / 2, KM].forEach(x => el('line', { x1: x, y1: -6, x2: x, y2: 6 }, sc));
+  [['0', 0], ['500 m', KM / 2], ['1 km', KM + 8]].forEach(([txt, x], i) => {
+    const n = el('text', { x: i === 2 ? x : x, y: -10, 'text-anchor': i === 2 ? 'start' : 'middle' }, sc);
+    n.textContent = txt;
+  });
+  const north = el('g', { class: 'north', transform: 'translate(770 150)' }, svg);
+  el('path', { d: 'M0 -22 L8 6 L0 0 L-8 6 Z' }, north);
+  const nt = el('text', { x: 0, y: 24, 'text-anchor': 'middle' }, north);
+  nt.textContent = 'N';
+
   // routes
   const routes = {};
   routes.road = el('path', { d: ROUTES.road, class: 'road' }, svg);

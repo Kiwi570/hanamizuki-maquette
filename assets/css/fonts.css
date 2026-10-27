@@ -1,8 +1,6 @@
 /* Polices (Google Fonts, SIL Open Font License), réduites aux caractères du site */
-@font-face{font-family:"Shippori Mincho B1";src:url("../fonts/ShipporiMinchoB1-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"Shippori Mincho B1";src:url("../fonts/ShipporiMinchoB1-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-@font-face{font-family:"Zen Kaku Gothic New";src:url("../fonts/ZenKakuGothicNew-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"Zen Kaku Gothic New";src:url("../fonts/ZenKakuGothicNew-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Shippori Mincho B1";src:url("../fonts/ShipporiMinchoB1-Bold.woff") format("woff");font-weight:500 800;font-style:normal;font-display:swap}
+@font-face{font-family:"Zen Kaku Gothic New";src:url("../fonts/ZenKakuGothicNew-Regular.woff") format("woff");font-weight:300 500;font-style:normal;font-display:swap}
 @font-face{font-family:"Cormorant Garamond";src:url("../fonts/CormorantGaramond-VF.woff") format("woff");font-weight:300 700;font-style:normal;font-display:swap}
 @font-face{font-family:"Cormorant Garamond";src:url("../fonts/CormorantGaramond-Italic-VF.woff") format("woff");font-weight:300 700;font-style:italic;font-display:swap}
 @font-face{font-family:"Gowun Batang";src:url("../fonts/GowunBatang-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}

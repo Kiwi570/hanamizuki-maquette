@@ -28,7 +28,7 @@ function hero(sea) {
       .from('.hero [data-reveal]', { y: 30, opacity: 0, duration: 1, ease: 'power3.out', stagger: 0.12 }, 0.4)
       .fromTo('[data-hero-photo]', { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.5, ease: 'power4.inOut', clearProps: 'clipPath' }, 0.2)
       .from('[data-hero-photo] img', { scale: 1.35, duration: 2, ease: 'power3.out' }, 0.2)
-      .from('.hero-meta > *', { y: 30, opacity: 0, duration: 0.9, ease: 'power3.out', stagger: 0.12 }, 0.9)
+      .from('.hero .ticket, .hero .clock', { y: 30, opacity: 0, duration: 0.9, ease: 'power3.out', stagger: 0.15 }, 0.9)
       .from('.scroll-cue', { opacity: 0, duration: 0.8 }, 1.4);
   }
   const showLoader = loader && !root.classList.contains('is-loaded') && !HZ.calm;
@@ -71,13 +71,8 @@ function crossing() {
   const map = drawMap(host);
   if (HZ.calm) { map.still('both'); return; }
   const tl = mapIntro(map, gsap, { paused: true });
-  const mm = gsap.matchMedia();
-  mm.add('(min-width: 961px)', () => {
-    ScrollTrigger.create({ trigger: '[data-cross]', start: 'top top', end: '+=120%', pin: true, scrub: 0.6, animation: tl });
-  });
-  mm.add('(max-width: 960px)', () => {
-    ScrollTrigger.create({ trigger: host, start: 'top 75%', once: true, onEnter: () => tl.play() });
-  });
+  // tracé piloté par le défilement, sans épinglage : toute la section reste lisible
+  ScrollTrigger.create({ trigger: host, start: 'top 82%', end: 'bottom 70%', scrub: 0.8, animation: tl });
   pulsePins(map, gsap);
 }
 

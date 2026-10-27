@@ -72,14 +72,15 @@ function setupLang() {
     btn.setAttribute('aria-expanded', String(open));
     if (open) list.querySelector('button')?.focus();
   });
-  list.addEventListener('click', e => {
+  document.addEventListener('click', e => {
     const b = e.target.closest('[data-set-lang]');
-    if (!b) return;
-    applyLang(b.dataset.setLang);
+    if (b) {
+      applyLang(b.dataset.setLang);
+      try { const u = new URL(location.href); u.searchParams.set('lang', b.dataset.setLang); history.replaceState(null, '', u); } catch (err) { /* adresse inchangée */ }
+      if (list.contains(b)) btn.focus();
+    }
     close();
-    btn.focus();
   });
-  document.addEventListener('click', close);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 }
 
@@ -118,7 +119,10 @@ function setupHeader() {
   const mnav = document.querySelector('[data-mnav]');
   if (burger && mnav) {
     const set = open => {
+      const wasOpen = !mnav.hidden;
       mnav.hidden = !open;
+      if (open) requestAnimationFrame(() => mnav.querySelector('a, button')?.focus());
+      else if (wasOpen) burger.focus();
       burger.setAttribute('aria-expanded', String(open));
       burger.setAttribute('aria-label', t(open ? 'ui.close' : 'ui.menu'));
       if (HZ.lenis) open ? HZ.lenis.stop() : HZ.lenis.start();
@@ -179,7 +183,7 @@ export function setupTilt(scope = document) {
 const WAVE = '<svg viewBox="0 0 1200 30" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 30 V16 C100 4 200 4 300 16 S500 28 600 16 S800 4 900 16 S1100 28 1200 16 V30Z"/></svg>';
 export function ink(el, opts = {}) {
   if (HZ.calm) return null;
-  const split = new SplitText(el, { type: 'chars', charsClass: 'ch' });
+  const split = new SplitText(el, { type: 'words,chars', wordsClass: 'w', charsClass: 'ch' });
   const vertical = getComputedStyle(el).writingMode.startsWith('vertical');
   const tween = gsap.from(split.chars, {
     opacity: 0,
@@ -318,6 +322,26 @@ function sunTimes(date, lat, lon) {
   const toDate = j => new Date((j + 0.5 - 2440588) * 864e5);
   return { rise: toDate(Jrise), set: toDate(Jset) };
 }
+function eclToEq(l, b) {
+  const e = RAD * 23.4397;
+  return { ra: Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l)), dec: Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l)) };
+}
+function moonState(date, lat, lon) {
+  const d = date.valueOf() / 864e5 - 0.5 + 2440588 - 2451545;
+  const L = RAD * (218.316 + 13.176396 * d), M = RAD * (134.963 + 13.064993 * d), F = RAD * (93.272 + 13.229350 * d);
+  const m = eclToEq(L + RAD * 6.289 * Math.sin(M), RAD * 5.128 * Math.sin(F));
+  const dist = 385001 - 20905 * Math.cos(M);
+  const H = RAD * (280.16 + 360.9856235 * d) + lon * RAD - m.ra, phi = lat * RAD;
+  const alt = Math.asin(Math.sin(phi) * Math.sin(m.dec) + Math.cos(phi) * Math.cos(m.dec) * Math.cos(H));
+  const az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(m.dec) * Math.cos(phi));
+  const Ms = RAD * (357.5291 + 0.98560028 * d);
+  const Ls = Ms + RAD * (1.9148 * Math.sin(Ms) + 0.02 * Math.sin(2 * Ms) + 0.0003 * Math.sin(3 * Ms)) + RAD * 102.9372 + Math.PI;
+  const sun = eclToEq(Ls, 0), sdist = 149598000;
+  const ph = Math.acos(Math.sin(sun.dec) * Math.sin(m.dec) + Math.cos(sun.dec) * Math.cos(m.dec) * Math.cos(sun.ra - m.ra));
+  const inc = Math.atan2(sdist * Math.sin(ph), dist - sdist * Math.cos(ph));
+  const ang = Math.atan2(Math.cos(sun.dec) * Math.sin(sun.ra - m.ra), Math.sin(sun.dec) * Math.cos(m.dec) - Math.cos(sun.dec) * Math.sin(m.dec) * Math.cos(sun.ra - m.ra));
+  return { alt: alt / RAD, bearing: (az / RAD + 180 + 360) % 360, fraction: (1 + Math.cos(inc)) / 2, phase: 0.5 + 0.5 * inc * (ang < 0 ? -1 : 1) / Math.PI };
+}
 const SKY = [ // altitude du soleil (°) -> haut du ciel, horizon, mer proche, mer profonde, couleur du soleil
   [-18, '#050a14', '#13223a', '#0b1626', '#03070d', '#8fa6c0'],
   [-9, '#0b1628', '#35406a', '#0f1d33', '#050b15', '#e2683c'],
@@ -341,22 +365,43 @@ export function skyAt(date = new Date()) {
   let phase = 'day';
   if (pos.alt < -6) phase = 'night';
   else if (pos.alt < 6) phase = morning ? 'dawn' : 'dusk';
+  const moon = moonState(date, lat, lon);
+  const night = Math.max(0, Math.min(1, (-pos.alt - 4) / 8));
   return {
+    moon: {
+      x: Math.max(0.06, Math.min(0.94, (moon.bearing - 60) / 240)),
+      y: Math.max(-0.2, Math.min(0.34, moon.alt / 70)),
+      vis: Math.max(0, Math.min(1, (moon.alt + 1) / 4)) * (0.25 + 0.75 * night),
+      phase: moon.phase, fraction: moon.fraction,
+    },
     alt: pos.alt, bearing: pos.bearing, phase,
     top: pick(1), hz: pick(2), sea1: pick(3), sea2: pick(4), sun: pick(5),
     sunX: Math.max(0.06, Math.min(0.94, (pos.bearing - 60) / 240)),
-    sunY: Math.max(-0.2, Math.min(0.5, pos.alt / 70)),
+    sunY: Math.max(-0.2, Math.min(0.34, pos.alt / 70)),
     sunVis: Math.max(0, Math.min(1, (pos.alt + 2) / 4)),
     night: Math.max(0, Math.min(1, (-pos.alt - 4) / 8)),
     times: sunTimes(date, lat, lon),
   };
 }
+let skyOverride = null;
+const ymdJST = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const minutesJST = d => { const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hour12: false }).format(d).split(':'); return (+p[0] % 24) * 60 + +p[1]; };
+const atMinutes = m => new Date(`${ymdJST()}T${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00+09:00`);
 function setupClock() {
   const box = document.querySelector('[data-clock]');
+  const range = box && box.querySelector('[data-sky-range]');
+  const live = box && box.querySelector('[data-sky-live]');
+  const flag = box && box.querySelector('[data-sky-flag]');
   const tick = () => {
-    const now = new Date();
+    const now = skyOverride || new Date();
     const sky = skyAt(now);
     HZ.sky = sky;
+    document.dispatchEvent(new CustomEvent('hz:sky', { detail: sky }));
+    if (flag) flag.hidden = !skyOverride;
+    const heroEl = document.querySelector('[data-hero]');
+    if (heroEl) heroEl.dataset.phase = sky.phase;
+    if (live) live.setAttribute('aria-pressed', String(!skyOverride));
+    if (range && !skyOverride) range.value = String(Math.round(minutesJST(now) / 5) * 5);
     const css = c => `rgb(${c.map(v => Math.round(v * 255)).join(',')})`;
     const r = document.querySelector('[data-sea]');
     if (r) { r.style.setProperty('--sky-top', css(sky.top)); r.style.setProperty('--sky-hz', css(sky.hz)); r.style.setProperty('--sea-1', css(sky.sea1)); r.style.setProperty('--sea-2', css(sky.sea2)); }
@@ -367,6 +412,12 @@ function setupClock() {
     box.querySelector('[data-sunset]').textContent = fmtDate(sky.times.set, hm);
     box.querySelector('[data-sky-phase]').textContent = t('sky.' + sky.phase);
   };
+  try {
+    const h = new URLSearchParams(location.search).get('heure');
+    if (h && /^\d{1,2}:\d{2}$/.test(h)) { const [a, b] = h.split(':').map(Number); skyOverride = atMinutes(Math.min(1439, a * 60 + b)); }
+  } catch (e) { /* paramètre ignoré */ }
+  if (range) range.addEventListener('input', () => { skyOverride = atMinutes(+range.value); tick(); });
+  if (live) live.addEventListener('click', () => { skyOverride = null; tick(); });
   tick();
   setInterval(tick, 30000);
   onLang(tick);
@@ -482,26 +533,26 @@ class SeaSound {
   }
 }
 function setupSound() {
-  const btn = document.querySelector('[data-sound]');
-  if (!btn) return;
+  const btns = [...document.querySelectorAll('[data-sound]')];
+  if (!btns.length) return;
   const s = new SeaSound();
-  const label = () => {
-    const k = s.on ? 'ui.sound.off' : 'ui.sound.on';
-    btn.setAttribute('aria-label', t(k)); btn.setAttribute('title', t(k));
-  };
-  btn.addEventListener('click', () => { btn.setAttribute('aria-pressed', String(s.toggle())); label(); });
+  const label = () => btns.forEach(b => {
+    b.setAttribute('aria-pressed', String(s.on));
+    if (b.classList.contains('icon-btn')) { const k = s.on ? 'ui.sound.off' : 'ui.sound.on'; b.setAttribute('aria-label', t(k)); b.setAttribute('title', t(k)); }
+  });
+  btns.forEach(b => b.addEventListener('click', () => { s.toggle(); label(); }));
   document.addEventListener('visibilitychange', () => { if (s.ctx && s.on) document.hidden ? s.ctx.suspend() : s.ctx.resume(); });
   onLang(label);
 }
 
 /* ---------------- mode calme ---------------- */
 function setupCalm() {
-  const b = document.querySelector('[data-calm]');
-  if (!b) return;
+  document.querySelectorAll('[data-calm]').forEach(b => {
   b.setAttribute('aria-pressed', String(HZ.calm));
   b.addEventListener('click', () => {
     try { localStorage.setItem('hz-calm', HZ.calm ? '0' : '1'); } catch (e) { /* stockage indisponible */ }
     location.reload();
+  });
   });
 }
 
@@ -515,7 +566,7 @@ function setupTransitions() {
   else {
     gsap.set(c, { yPercent: 0 });
     arrive();
-    gsap.to(c, { yPercent: -120, duration: 1.1, ease: 'power3.inOut', delay: 0.1 });
+    gsap.to(c, { yPercent: -120, duration: 0.85, ease: 'power3.inOut', delay: 0.05 });
   }
   addEventListener('pageshow', e => { if (e.persisted) { gsap.set(c, { yPercent: 110 }); wrap.classList.remove('is-on'); } });
   document.addEventListener('click', e => {
@@ -528,7 +579,7 @@ function setupTransitions() {
     if (samePage) return;
     e.preventDefault();
     wrap.classList.add('is-on');
-    gsap.fromTo(c, { yPercent: 110 }, { yPercent: 0, duration: 0.8, ease: 'power3.inOut', onComplete: () => { location.href = url.href; } });
+    gsap.fromTo(c, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: 'power3.inOut', onComplete: () => { location.href = url.href; } });
   });
 }
 
@@ -540,6 +591,46 @@ function setupImgFallback() {
     if (img.complete && img.naturalWidth === 0) fail();
     else img.addEventListener('error', fail, { once: true });
   });
+}
+
+/* ---------------- bords en vague entre sections ---------------- */
+const lumOf = c => { const v = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number); return (0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]) / 255; };
+function setupEdges() {
+  const list = [...document.querySelectorAll('main > section, body > footer')];
+  const TOP = ['M0 0 H1440 V18 C1200 52 960 4 720 28 S240 52 0 20 Z', 'M0 0 H1440 V26 C1180 6 940 50 700 24 S220 4 0 30 Z'];
+  const BOT = ['M0 60 V36 C240 6 480 56 720 32 S1200 8 1440 40 V60 Z', 'M0 60 V28 C260 52 500 8 740 34 S1220 54 1440 30 V60 Z'];
+  const edge = (host, where, color, i) => {
+    const d = document.createElement('div');
+    d.className = 'edge edge--' + where;
+    d.setAttribute('aria-hidden', 'true');
+    const P = where === 'top' ? TOP : BOT;
+    d.innerHTML = `<svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path fill="${color}" d="${P[0]}"/></svg>`;
+    host.appendChild(d);
+    if (!HZ.calm) gsap.to(d.querySelector('path'), { attr: { d: P[1] }, duration: 5 + (i % 3), ease: 'sine.inOut', yoyo: true, repeat: -1 });
+  };
+  for (let i = 0; i < list.length - 1; i++) {
+    const a = list[i], b = list[i + 1];
+    if (a.querySelector(':scope > .shore')) continue;
+    const ca = getComputedStyle(a).backgroundColor, cb = getComputedStyle(b).backgroundColor;
+    const la = lumOf(ca), lb = lumOf(cb);
+    if (la - lb > 0.25 && a.tagName === 'SECTION') edge(a, 'bottom', cb, i);
+    else if (lb - la > 0.25 && b.tagName === 'SECTION') edge(b, 'top', ca, i);
+  }
+}
+
+/* ---------------- barre d'actions mobile ---------------- */
+function setupMbar() {
+  const bar = document.querySelector('[data-mbar]');
+  if (!bar) return;
+  const blockers = new Set();
+  let past = false;
+  const upd = () => bar.classList.toggle('is-on', past && blockers.size === 0);
+  const pos = () => (HZ.lenis ? HZ.lenis.scroll : scrollY);
+  const onScroll = () => { past = pos() > innerHeight * 0.6; upd(); };
+  if (HZ.lenis) HZ.lenis.on('scroll', onScroll); else addEventListener('scroll', onScroll, { passive: true });
+  const io = new IntersectionObserver(es => { es.forEach(e => (e.isIntersecting ? blockers.add(e.target) : blockers.delete(e.target))); upd(); });
+  document.querySelectorAll('.cta, #reserver, .ft, .nf').forEach(el => io.observe(el));
+  onScroll();
 }
 
 /* ---------------- démarrage ---------------- */
@@ -558,6 +649,8 @@ export function boot(pageInit) {
   setupCopy();
   setupSound();
   setupCalm();
+  setupEdges();
+  setupMbar();
   setupTransitions();
   setupImgFallback();
   document.querySelectorAll('[data-year]').forEach(n => { n.textContent = new Date().getFullYear(); });
