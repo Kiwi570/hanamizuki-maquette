@@ -1,5 +1,5 @@
 /* Carte de la baie de Saiki : vraie côte (données MLIT simplifiées), routes et débarcadères indicatifs. */
-import { t, onLang } from './core.js';
+import { t, onLang } from './core.js?v=20261028';
 
 const NS = 'http://www.w3.org/2000/svg';
 const el = (name, attrs = {}, parent) => {

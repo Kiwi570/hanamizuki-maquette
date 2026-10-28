@@ -1,7 +1,7 @@
 /* Accueil : ouverture, mer, traversée, table, temps de l'île, mythe, avis. */
-import { boot, HZ, gsap, ScrollTrigger, ink, t, onLang } from './core.js';
-import { initSea } from './sea.js';
-import { drawMap, mapIntro, pulsePins } from './map.js';
+import { boot, HZ, gsap, ScrollTrigger, ink, t, onLang } from './core.js?v=20261028';
+import { initSea } from './sea.js?v=20261028';
+import { drawMap, mapIntro, pulsePins } from './map.js?v=20261028';
 
 const root = document.documentElement;
 const $ = (s, c = document) => c.querySelector(s);

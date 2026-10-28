@@ -1,6 +1,6 @@
 /* Accès : trajet pas à pas sur la carte, piéton / voiture, navette en diagramme radial. */
-import { boot, HZ, gsap, ScrollTrigger, t, onLang, ink } from './core.js';
-import { drawMap, mapIntro, pulsePins } from './map.js';
+import { boot, HZ, gsap, ScrollTrigger, t, onLang, ink } from './core.js?v=20261028';
+import { drawMap, mapIntro, pulsePins } from './map.js?v=20261028';
 
 const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
