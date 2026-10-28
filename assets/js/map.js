@@ -1,5 +1,5 @@
 /* Carte de la baie de Saiki : vraie côte (données MLIT simplifiées), routes et débarcadères indicatifs. */
-import { t, onLang } from './core.js?v=20261028';
+import { t, onLang } from './core.js?v=20261028-2';
 
 const NS = 'http://www.w3.org/2000/svg';
 const el = (name, attrs = {}, parent) => {
@@ -36,12 +36,12 @@ export function drawMap(host) {
   const grid = el('g', { class: 'grid' }, svg);
   [[131.90, '131°54′E'], [131.95, '131°57′E']].forEach(([lon, lbl]) => {
     el('line', { x1: X(lon), x2: X(lon), y1: 0, y2: M.h, 'stroke-dasharray': '3 6' }, grid);
-    const tx = el('text', { x: X(lon) + 6, y: M.h - 10, class: 'coordlbl', style: 'font-family:var(--f-mono);font-size:11px;fill:var(--ai-300);stroke:none' }, grid);
+    const tx = el('text', { x: X(lon) + 6, y: M.h - 10, class: 'coordlbl', style: 'font-family:var(--f-mono);font-size:12px;fill:var(--ai-300);stroke:none' }, grid);
     tx.textContent = lbl;
   });
   [[33.00, '33°00′N'], [32.95, '32°57′N']].forEach(([lat, lbl]) => {
     el('line', { x1: 0, x2: M.w, y1: Y(lat), y2: Y(lat), 'stroke-dasharray': '3 6' }, grid);
-    const tx = el('text', { x: 8, y: Y(lat) - 6, style: 'font-family:var(--f-mono);font-size:11px;fill:var(--ai-300);stroke:none' }, grid);
+    const tx = el('text', { x: 8, y: Y(lat) - 6, style: 'font-family:var(--f-mono);font-size:12px;fill:var(--ai-300);stroke:none' }, grid);
     tx.textContent = lbl;
   });
 

@@ -3,7 +3,7 @@ import { Renderer } from './vendor/ogl/core/Renderer.js';
 import { Program } from './vendor/ogl/core/Program.js';
 import { Mesh } from './vendor/ogl/core/Mesh.js';
 import { Triangle } from './vendor/ogl/extras/Triangle.js';
-import { HZ, skyAt } from './core.js?v=20261028';
+import { HZ, skyAt } from './core.js?v=20261028-2';
 
 const vertex = /* glsl */ `
 attribute vec2 uv;

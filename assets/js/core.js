@@ -618,19 +618,34 @@ function setupEdges() {
   }
 }
 
+/* ---------------- hauteurs mesurées : en‑tête (--entete-h) et barre du bas (--barres-h) ---------------- */
+function setupMeasures() {
+  const hd = document.querySelector('[data-hd]');
+  const bar = document.querySelector('[data-mbar]');
+  const set = () => {
+    if (hd) root.style.setProperty('--entete-h', Math.ceil(hd.getBoundingClientRect().bottom) + 'px');
+    root.style.setProperty('--barres-h', (bar && getComputedStyle(bar).display !== 'none' ? Math.ceil(bar.offsetHeight) : 0) + 'px');
+  };
+  set();
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(set); hd && ro.observe(hd); bar && ro.observe(bar); }
+  addEventListener('resize', set);
+}
+
 /* ---------------- barre d'actions mobile ---------------- */
 function setupMbar() {
   const bar = document.querySelector('[data-mbar]');
   if (!bar) return;
   const blockers = new Set();
-  let past = false;
-  const upd = () => bar.classList.toggle('is-on', past && blockers.size === 0);
-  const pos = () => (HZ.lenis ? HZ.lenis.scroll : scrollY);
-  const onScroll = () => { past = pos() > innerHeight * 0.6; upd(); };
-  if (HZ.lenis) HZ.lenis.on('scroll', onScroll); else addEventListener('scroll', onScroll, { passive: true });
+  const mnav = document.querySelector('[data-mnav]');
+  // visible seulement une fois le héros dépassé, jamais sur le formulaire, le pied de page ou le menu ouvert
+  const hero = document.querySelector('[data-hero], [data-sj-hero], .ac-hero, .lg-head, .nf');
+  let past = !hero;
+  const upd = () => bar.classList.toggle('is-on', past && blockers.size === 0 && (!mnav || mnav.hidden));
+  if (hero) new IntersectionObserver(([e]) => { past = !e.isIntersecting && e.boundingClientRect.top < 0; upd(); }).observe(hero);
   const io = new IntersectionObserver(es => { es.forEach(e => (e.isIntersecting ? blockers.add(e.target) : blockers.delete(e.target))); upd(); });
   document.querySelectorAll('.cta, #reserver, .ft, .nf').forEach(el => io.observe(el));
-  onScroll();
+  if (mnav) new MutationObserver(upd).observe(mnav, { attributes: true, attributeFilter: ['hidden'] });
+  upd();
 }
 
 /* ---------------- démarrage ---------------- */
@@ -650,6 +665,7 @@ export function boot(pageInit) {
   setupSound();
   setupCalm();
   setupEdges();
+  setupMeasures();
   setupMbar();
   setupTransitions();
   setupImgFallback();

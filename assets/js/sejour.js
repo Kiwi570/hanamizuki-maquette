@@ -1,5 +1,5 @@
 /* Séjour : shōji, tarifs, calculateur (campagne ‑50 %), demande de réservation simulée. */
-import { boot, HZ, gsap, ScrollTrigger, ink, t, yen, fmtDate, onLang, scrollTo } from './core.js?v=20261028';
+import { boot, HZ, gsap, ScrollTrigger, ink, t, yen, fmtDate, onLang, scrollTo } from './core.js?v=20261028-2';
 
 const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];

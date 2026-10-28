@@ -1,7 +1,7 @@
 /* Accueil : ouverture, mer, traversée, table, temps de l'île, mythe, avis. */
-import { boot, HZ, gsap, ScrollTrigger, ink, t, onLang } from './core.js?v=20261028';
-import { initSea } from './sea.js?v=20261028';
-import { drawMap, mapIntro, pulsePins } from './map.js?v=20261028';
+import { boot, HZ, gsap, ScrollTrigger, ink, t, onLang } from './core.js?v=20261028-2';
+import { initSea } from './sea.js?v=20261028-2';
+import { drawMap, mapIntro, pulsePins } from './map.js?v=20261028-2';
 
 const root = document.documentElement;
 const $ = (s, c = document) => c.querySelector(s);
@@ -23,7 +23,7 @@ function hero(sea) {
   const title = $('.hero-title');
   const intro = gsap.timeline({ paused: true });
   if (!HZ.calm) {
-    intro.add(ink(title, { duration: 1.2 }) || gsap.timeline(), 0)
+    intro.add(ink(title, { duration: 0.8 }) || gsap.timeline(), 0)
       .from('.hero .kicker', { y: 20, opacity: 0, duration: 0.8, ease: 'power3.out' }, 0.1)
       .from('.hero [data-reveal]', { y: 30, opacity: 0, duration: 1, ease: 'power3.out', stagger: 0.12 }, 0.4)
       .fromTo('[data-hero-photo]', { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.5, ease: 'power4.inOut', clearProps: 'clipPath' }, 0.2)
@@ -34,11 +34,12 @@ function hero(sea) {
   const showLoader = loader && !root.classList.contains('is-loaded') && !HZ.calm;
   if (showLoader) {
     const tl = gsap.timeline({ onComplete: () => { root.classList.add('is-loaded'); try { sessionStorage.setItem('hz-seen', '1'); } catch (e) { /* ignoré */ } } });
-    tl.from('.loader-kanji span', { opacity: 0, filter: 'blur(12px)', y: -18, duration: 0.7, stagger: 0.18, ease: 'power3.out' })
-      .from('.loader-sub', { opacity: 0, duration: 0.4 }, 0.5)
-      .to('.loader-tide', { yPercent: -100, duration: 1.1, ease: 'power3.inOut' }, 0.9)
-      .to(loader, { yPercent: -100, duration: 0.9, ease: 'power4.inOut' }, 1.75)
-      .add(() => intro.play(), 1.85);
+    // voile court : terminé à 1,6 s, titre lancé à 1,2 s
+    tl.from('.loader-kanji span', { opacity: 0, filter: 'blur(12px)', y: -18, duration: 0.5, stagger: 0.12, ease: 'power3.out' })
+      .from('.loader-sub', { opacity: 0, duration: 0.3 }, 0.3)
+      .to('.loader-tide', { yPercent: -100, duration: 0.8, ease: 'power3.inOut' }, 0.45)
+      .to(loader, { yPercent: -100, duration: 0.5, ease: 'power4.inOut' }, 1.1)
+      .add(() => intro.play(), 1.2);
   } else {
     root.classList.add('is-loaded');
     intro.play();

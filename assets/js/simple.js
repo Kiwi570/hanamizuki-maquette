@@ -1,3 +1,3 @@
 /* Pages simples (404) */
-import { boot } from './core.js?v=20261028';
+import { boot } from './core.js?v=20261028-2';
 boot();
